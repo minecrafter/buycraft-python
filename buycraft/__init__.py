@@ -2,6 +2,10 @@ import re
 import requests
 
 
+class BuycraftException(Exception):
+    pass
+
+
 class BuycraftAPI(object):
     def __init__(self, secret, url='https://plugin.buycraft.net'):
         """
@@ -14,7 +18,10 @@ class BuycraftAPI(object):
         self.url = url
 
     def _getjson(self, url):
-        return requests.get(url, headers={'X-Buycraft-Secret': self.secret}).json()
+        response = requests.get(url, headers={'X-Buycraft-Secret': self.secret}).json()
+        if 'error_code' in response:
+            raise BuycraftException('Error code ' + str(response['error_code']) + ': ' + response['error_message'])
+        return response
 
     def information(self):
         """Returns information about the server and the webstore.
@@ -36,7 +43,7 @@ class BuycraftAPI(object):
         elif isinstance(page, int):
             return self._getjson(self.url + '/queue?page=' + str(page))
         else:
-            raise Exception("page parameter is not valid")
+            raise BuycraftException("page parameter is not valid")
 
     def get_offline_commands(self):
         """Returns a listing of all commands that can be run immediately.
@@ -49,7 +56,7 @@ class BuycraftAPI(object):
         if isinstance(player_id, int):
             return self._getjson(self.url + '/queue/online-commands/' + str(player_id))
         else:
-            raise Exception("player_id parameter is not valid")
+            raise BuycraftException("player_id parameter is not valid")
 
     def mark_commands_completed(self, command_ids):
         """Marks the specified commands as complete.
@@ -68,7 +75,7 @@ class BuycraftAPI(object):
         if isinstance(limit, int):
             return self._getjson(self.url + '/payments')
         else:
-            raise Exception("limit parameter is not valid")
+            raise BuycraftException("limit parameter is not valid")
 
     def create_checkout_link(self, username, package_id):
         """Creates a checkout link for a package.
@@ -77,10 +84,13 @@ class BuycraftAPI(object):
         :param package_id: the package ID to check out
         """
         if not isinstance(username, str) or len(username) > 16 or not re.match('\w', username):
-            raise Exception("Username is not valid")
+            raise BuycraftException("Username is not valid")
 
         if not isinstance(package_id, int):
-            raise Exception("Package ID is not valid")
+            raise BuycraftException("Package ID is not valid")
 
-        return requests.post(self.url + '/checkout', params={'package_id': package_id, 'username': username},
-                             headers={'X-Buycraft-Secret': self.secret}).json()
+        response = requests.post(self.url + '/checkout', params={'package_id': package_id, 'username': username},
+                                 headers={'X-Buycraft-Secret': self.secret}).json()
+        if 'error_code' in response:
+            raise BuycraftException('Error code ' + str(response['error_code']) + ': ' + response['error_messages'])
+        return response
