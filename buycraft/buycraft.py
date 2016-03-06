@@ -1,5 +1,5 @@
+import re
 import requests
-import urllib
 
 
 class BuycraftAPI(object):
@@ -56,8 +56,7 @@ class BuycraftAPI(object):
 
         :param command_ids: the IDs of the commands to mark completed
         """
-        ids = urllib.urlencode(map(lambda id: ("ids[]", id), command_ids))
-        return requests.delete(self.url + '/queue?' + ids)
+        return requests.delete(self.url + '/queue', params={'ids[]': command_ids})
 
     def recent_payments(self, limit):
         """Gets the rest of recent payments made for this webstore.
@@ -68,3 +67,17 @@ class BuycraftAPI(object):
             return self._getjson(self.url + '/payments')
         else:
             raise Exception("limit parameter is not valid")
+
+    def create_checkout_link(self, username, package_id):
+        """Creates a checkout link for a package.
+
+        :param username: the username to use for this package
+        :param package_id: the package ID to check out
+        """
+        if not isinstance(username, str) or len(username) > 16 or not re.match('\w', username):
+            raise Exception("Username is not valid")
+
+        if not isinstance(package_id, int):
+            raise Exception("Package ID is not valid")
+
+        return requests.post(self.url + '/checkout', params={'package_id': package_id, 'username': username}).json()
