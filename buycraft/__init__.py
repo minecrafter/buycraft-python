@@ -56,7 +56,9 @@ class BuycraftAPI(object):
 
         :param command_ids: the IDs of the commands to mark completed
         """
-        return requests.delete(self.url + '/queue', params={'ids[]': command_ids})
+        resp = requests.delete(self.url + '/queue', params={'ids[]': command_ids},
+                               headers={'X-Buycraft-Secret': self.secret})
+        return resp.status_code == 204
 
     def recent_payments(self, limit):
         """Gets the rest of recent payments made for this webstore.
@@ -80,4 +82,5 @@ class BuycraftAPI(object):
         if not isinstance(package_id, int):
             raise Exception("Package ID is not valid")
 
-        return requests.post(self.url + '/checkout', params={'package_id': package_id, 'username': username}).json()
+        return requests.post(self.url + '/checkout', params={'package_id': package_id, 'username': username},
+                             headers={'X-Buycraft-Secret': self.secret}).json()
